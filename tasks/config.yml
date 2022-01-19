@@ -13,7 +13,10 @@
     path: "{{ filebeat_ssl_dir }}"
     state: directory
     mode: 0755
-  when: filebeat_ssl_key_file | default(false)
+  when:
+    - (filebeat_ssl_key_file | default(false)) or
+      (filebeat_ssl_certificate_file | default(false)) or
+      (filebeat_ssl_CA_file | default(false))
 
 - name: Copy SSL key and cert for filebeat.
   copy:
@@ -27,3 +30,14 @@
   when:
     - filebeat_ssl_key_file | default(false)
     - filebeat_ssl_certificate_file | default(false)
+
+- name: Copy CA cert for filebeat.
+  copy:
+    src: "{{ item }}"
+    dest: "{{ filebeat_ssl_dir }}/{{ item | basename }}"
+    mode: 0644
+  with_items:
+    - "{{ filebeat_ssl_CA_file }}"
+  notify: restart filebeat
+  when:
+    - filebeat_ssl_CA_file | default(false)
